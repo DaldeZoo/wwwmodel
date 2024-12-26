@@ -86,6 +86,9 @@ class Node:
       self.right = None
 
 def entropy(dp_list):
+    if len(dp_list) == 0:
+        return 0
+
     # each row is all the datapoints from node with class/output i
     dp_classes_matrix = []
     for i in OUTPUTS:
@@ -104,6 +107,9 @@ def entropy(dp_list):
 
 # Using split_feature x > split_threshold z
 def information_gain(node, split_feature, split_threshold):
+    if node is None or node.dp_count == 0:
+        return 0
+
     # datapoints that go to the left subtree or right subtrees, respectively, after split
     left_subtree_dps = []
     right_subtree_dps = []
