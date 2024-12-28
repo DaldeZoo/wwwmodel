@@ -139,8 +139,8 @@ def clean_tree(root):
         return
     clean_tree(root.left)
     clean_tree(root.right)
-    del root.dp_count
-    del root.dp_list
+    root.dp_count = None
+    root.dp_list = None
 
 def build_decision_tree(node):
     # base case: no uncertainty or num of dps small enough, then becomes leaf node
