@@ -60,34 +60,35 @@ def get_input(character_one, character_two):
 # Temporary training datapoints:
 # these are labeled training datapoints ie (input, output)
 TRAINING_DATAPOINTS = [
-    (get_input(GOJO, GOKU), 2),
-    (get_input(GOKU, SAITAMA), 2),
-    (get_input(GOJO, SAITAMA), 2),
-    (get_input(GOKU, JOGO), 1),
-    (get_input(GOJO, TOJI), 1),
-    (get_input(GUY, NANAMI), 1),
-    (get_input(JOGO, NANAMI), 1),
-    (get_input(JOGO, ACE), 1),
-    (get_input(JOGO, GAARA), 1),
-    (get_input(GAARA, REINER), 2),
-    (get_input(TOJI, LUFFY), 2),
-    (get_input(TOJI, NANAMI), 1),
-    (get_input(ITACHI, REINER), 1),
-    (get_input(GAARA, ITACHI), 2),
-    (get_input(NANAMI, REINER), 1),
-    (get_input(GUY, GAARA), 1),
-    (get_input(ACE, SHIKAMARU), 1),
-    (get_input(NANAMI, SHIKAMARU), 2),
-    (get_input(REINER, SHIKAMARU), 1),
-    (get_input(LUFFY, GOKU), 2)
+    (get_input(GOJO, GOKU), 1),
+    (get_input(GOKU, SAITAMA), 1),
+    (get_input(GOJO, SAITAMA), 1),
+    (get_input(GOKU, JOGO), 0),
+    (get_input(GOJO, TOJI), 0),
+    (get_input(GUY, NANAMI), 0),
+    (get_input(JOGO, NANAMI), 0),
+    (get_input(JOGO, ACE), 0),
+    (get_input(JOGO, GAARA), 0),
+    (get_input(GAARA, REINER), 1),
+    (get_input(TOJI, LUFFY), 1),
+    (get_input(TOJI, NANAMI), 0),
+    (get_input(ITACHI, REINER), 0),
+    (get_input(GAARA, ITACHI), 1),
+    (get_input(NANAMI, REINER), 0),
+    (get_input(GUY, GAARA), 0),
+    (get_input(ACE, SHIKAMARU), 0),
+    (get_input(NANAMI, SHIKAMARU), 1),
+    (get_input(REINER, SHIKAMARU), 0),
+    (get_input(LUFFY, GOKU), 1)
 ]
-OUTPUTS = (1, 2) # class 1 - character 1 wins, class 2 - character 2 wins
+OUTPUTS = (0, 1) # class 0 - character 1 wins, class 1 - character 2 wins
 class Node:
    def __init__(self, dp_list):
       self.dp_list = dp_list # list of all datapoints in node j
       self.dp_count = len(dp_list)
       self.split_feature = -1
       self.split_threshold = -1
+      self.class_label = -1
       self.left = None
       self.right = None
 
@@ -95,16 +96,16 @@ def entropy(dp_list):
     if len(dp_list) == 0:
         return 0
 
-    # each row i is the number of datapoints in dp_list with class i+1
+    # each element i is the number of datapoints in dp_list with class label i
     dp_classes_count = []
     for i in OUTPUTS:
         dp_classes_count.append(0)
     for dp in dp_list:
         dp_output = dp[1]
-        dp_classes_count[dp_output-1] += 1
+        dp_classes_count[dp_output] += 1
 
     sum = 0
-    for i in range(len(OUTPUTS)):
+    for i in OUTPUTS:
         if dp_classes_count[i] > 0:
             class_probability = dp_classes_count[i] / len(dp_list) # probability of class i in node
             sum += class_probability * log(class_probability, 2)
@@ -141,12 +142,13 @@ def build_decision_tree(node):
     if (entropy(node.dp_list) == 0) or (len(node.dp_list) < MIN_NODE_DP_COUNT):
         node.left = None
         node.right = None
+        node.class_label = classify_node(node)
         return node
 
     # getting best split function based on highest ig
     split_fcn = [-1, -1, -1]
     for feature in range(FEATURE_COUNT):
-        for threshold in range(MIN_THRESHOLD, MAX_THRESHOLD): # !infinite recursion fix was here lol!
+        for threshold in range(MIN_THRESHOLD, MAX_THRESHOLD):
             ig = information_gain(node, feature, threshold)
             if ig > split_fcn[0]:
                 split_fcn = [ig, feature, threshold]
@@ -154,6 +156,7 @@ def build_decision_tree(node):
     if split_fcn[0] == -1:
         node.left = None
         node.right = None
+        node.class_label = classify_node(node)
         return node
     
     # current node split is best possible split
@@ -179,20 +182,16 @@ def build_decision_tree(node):
 # TODO: after tree is built, dp_list and counts in each node are pointless...
 
 def classify_node(node):
-    class_one_count = 0
-    class_two_count = 0
-    for dp in node.dp_list:
-        if dp[1] == 1:
-            class_one_count += 1
-        else:
-            class_two_count += 1
+    # each element i is the number of datapoints in node.dp_list with class label i
+    classes_count = []
+    for i in OUTPUTS:
+        classes_count.append(0)
 
-    prob_one = class_one_count / node.dp_count
-    prob_two = class_two_count / node.dp_count
-    if prob_one > prob_two:
-        return '1'
-    else:
-        return '2'
+    for dp in node.dp_list:
+        dp_output = dp[1]
+        classes_count[dp_output] += 1
+
+    return classes_count.index(max(classes_count))
 
 # assumes fully built decision tree
 # returns winner character tuple
@@ -205,11 +204,8 @@ def get_winner(node, characters):
             node = node.right
         else:
             node = node.left
-    winner_label = classify_node(node)
-    if winner_label == '1':
-        return characters[0]
-    else:
-        return characters[1]
+    winner = node.class_label
+    return characters[winner]
 
 # running and testing model
 node = Node(TRAINING_DATAPOINTS)
