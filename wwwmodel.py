@@ -135,24 +135,19 @@ def build_decision_tree(node):
     if (entropy(node.dp_list) == 0) or (len(node.dp_list) < MIN_NODE_DP_COUNT):
         node.left = None
         node.right = None
-        return
+        return node
 
-    # getting all ig (information gain) for each possible split function
-    split_fcn_list = []
+    # getting best split function based on highest ig
+    split_fcn = [-1, -1, -1]
     for feature in range(NUM_OF_FEATURES):
         for threshold in (MIN_THRESHOLD, MAX_THRESHOLD):
-            split_fcn_list.append([information_gain(node, feature, threshold), feature, threshold])
-
-    # getting best split based on highest ig
-    max_ig_idx = 0
-    for i in range(1, len(split_fcn_list)):
-        if split_fcn_list[i][0] > split_fcn_list[max_ig_idx][0]:
-            max_ig_idx = i
+            ig = information_gain(node, feature, threshold)
+            if ig > split_fcn[0]:
+                split_fcn = [ig, feature, threshold]
     
     # current node split is best possible split
-    node_split_fcn = split_fcn_list[max_ig_idx]
-    node.split_feature = node_split_fcn[1]
-    node.split_threshold = node_split_fcn[2]
+    node.split_feature = split_fcn[1]
+    node.split_threshold = split_fcn[2]
 
     # left and right child nodes datapoint list
     right_dp_list = []
@@ -165,5 +160,6 @@ def build_decision_tree(node):
     
     right_child_node = Node(right_dp_list)
     left_child_node = Node(left_dp_list)
-    build_decision_tree(right_child_node)
-    build_decision_tree(left_child_node)
+    node.right = build_decision_tree(right_child_node)
+    node.left = build_decision_tree(left_child_node)
+    return node
