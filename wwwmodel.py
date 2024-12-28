@@ -135,7 +135,12 @@ def information_gain(node, split_feature, split_threshold):
 
 # removes datapoint list and count from each node, as is no longer needed after tree is built
 def clean_tree(root):
-    pass
+    if root is None:
+        return
+    clean_tree(root.left)
+    clean_tree(root.right)
+    del root.dp_count
+    del root.dp_list
 
 def build_decision_tree(node):
     # base case: no uncertainty or num of dps small enough, then becomes leaf node
