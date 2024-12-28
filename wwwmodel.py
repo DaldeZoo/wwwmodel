@@ -28,6 +28,7 @@ import numpy as np
 NUM_OF_FEATURES = 8
 MAX_THRESHOLD = 10
 MIN_THRESHOLD = -(MAX_THRESHOLD)
+MIN_NODE_DP_COUNT = 3
 
 # The input to the model would be the vector of the difference between the two chosen character vectors
 # Then, this is inputted into the tree which classifies {1, 2}, where 1 means character 1 wins and 2 2 wins.
@@ -82,6 +83,8 @@ class Node:
    def __init__(self, dp_list):
       self.dp_list = dp_list # list of all datapoints in node j
       self.dp_count = len(dp_list)
+      self.split_feature = None
+      self.split_threshold = None
       self.left = None
       self.right = None
 
@@ -125,3 +128,42 @@ def information_gain(node, split_feature, split_threshold):
     result += -(len(left_subtree_dps)/node.dp_count)*left_entropy
     result += -(len(right_subtree_dps)/node.dp_count)*right_entropy
     return result
+
+# for root assumes: node = Node(TRAINING_DATAPOINTS)
+def build_decision_tree(node):
+    # base case
+    if (entropy(node.dp_list) == 0) or (len(node.dp_list) < MIN_NODE_DP_COUNT):
+        node.left = None
+        node.right = None
+        return
+
+    # getting all ig (information gain) for each possible split function
+    split_fcn_list = []
+    for feature in range(NUM_OF_FEATURES):
+        for threshold in (MIN_THRESHOLD, MAX_THRESHOLD):
+            split_fcn_list.append([information_gain(node, feature, threshold), feature, threshold])
+
+    # getting best split based on highest ig
+    max_ig_idx = 0
+    for i in range(1, len(split_fcn_list)):
+        if split_fcn_list[i][0] > split_fcn_list[max_ig_idx][0]:
+            max_ig_idx = i
+    
+    # current node split is best possible split
+    node_split_fcn = split_fcn_list[max_ig_idx]
+    node.split_feature = node_split_fcn[1]
+    node.split_threshold = node_split_fcn[2]
+
+    # left and right child nodes datapoint list
+    right_dp_list = []
+    left_dp_list = []
+    for dp in node.dp_list:
+        if dp[0][node.split_feature] > node.split_threshold:
+            right_dp_list.append(dp)
+        else:
+            left_dp_list.append(dp)
+    
+    right_child_node = Node(right_dp_list)
+    left_child_node = Node(left_dp_list)
+    build_decision_tree(right_child_node)
+    build_decision_tree(left_child_node)
