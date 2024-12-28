@@ -33,25 +33,27 @@ MIN_NODE_DP_COUNT = 3
 # The input to the model would be the vector of the difference between the two chosen character vectors
 # Then, this is inputted into the tree which classifies {1, 2}, where 1 means character 1 wins and 2 2 wins.
 
-# Example character vectors:
+NAME = 0
+STATS = 1
+# Example character tuples:
 # TODO: make a file for the data... and maybe get data via data scraping... where will i find this data lol
-GOJO = np.array([10, 7, 10, 10, 7, 7, 9, 9])
-GOKU = np.array([9, 10, 10, 8, 7, 6, 10, 10])
-LUFFY = np.array([8, 9, 0, 7, 7, 6, 8, 8])
-SAITAMA = np.array([10, 10, 0, 10, 4, 6, 8, 10])
-GUY = np.array([10, 9, 4, 5, 5, 7, 9, 9])
-NANAMI = np.array([5, 8, 0, 8, 5, 8, 9, 3])
-GAARA = np.array([6, 4, 8, 8, 6, 7, 8, 6])
-ITACHI = np.array([6, 5, 9, 6, 10, 9, 7, 7])
-REINER = np.array([6, 8, 0, 9, 4, 6, 7, 6])
-ACE = np.array([6, 5, 8, 4, 5, 6, 6, 6])
-SHIKAMARU = np.array([4, 4, 7, 4, 9, 10, 8, 3])
-TOJI = np.array([9, 10, 0, 8, 9, 8, 8, 7])
-JOGO = np.array([6, 7, 9, 6, 6, 7, 7, 7])
+GOJO = ("Gojo", np.array([10, 7, 10, 10, 7, 7, 9, 9]))
+GOKU = ("Goku", np.array([9, 10, 10, 8, 7, 6, 10, 10]))
+LUFFY = ("Luffy", np.array([8, 9, 0, 7, 7, 6, 8, 8]))
+SAITAMA = ("Saitama", np.array([10, 10, 0, 10, 4, 6, 8, 10]))
+GUY = ("Guy", np.array([10, 9, 4, 5, 5, 7, 9, 9]))
+NANAMI = ("Nanami", np.array([5, 8, 0, 8, 5, 8, 9, 3]))
+GAARA = ("Gaara", np.array([6, 4, 8, 8, 6, 7, 8, 6]))
+ITACHI = ("Itachi", np.array([6, 5, 9, 6, 10, 9, 7, 7]))
+REINER = ("Reiner", np.array([6, 8, 0, 9, 4, 6, 7, 6]))
+ACE = ("Ace", np.array([6, 5, 8, 4, 5, 6, 6, 6]))
+SHIKAMARU = ("Shikamaru", np.array([4, 4, 7, 4, 9, 10, 8, 3]))
+TOJI = ("Toji", np.array([9, 10, 0, 8, 9, 8, 8, 7]))
+JOGO = ("Jogo", np.array([6, 7, 9, 6, 6, 7, 7, 7]))
 
-# Takes as input two character vectors and returns the input vector that can be used on the decision tree
+# Takes as input two character tuples and returns the input vector that can be used on the decision tree
 def get_input(character_one, character_two):
-    return character_one - character_two
+    return character_one[STATS] - character_two[STATS]
 
 # Temporary training datapoints:
 TRAINING_DATAPOINTS = [
@@ -76,7 +78,6 @@ TRAINING_DATAPOINTS = [
     (get_input(REINER, SHIKAMARU), 1),
     (get_input(LUFFY, GOKU), 2)
 ]
-NUM_OF_TRAINING_DP = len(TRAINING_DATAPOINTS)
 OUTPUTS = [1, 2] # class 1 - character 1 wins, class 2 - character 2 wins
 
 class Node:
@@ -187,10 +188,10 @@ def classify_node(node):
         return '2'
 
 # assumes fully built decision tree
-def get_winner(node, character_one, character_two):
+def get_winner(node, characters):
     split_feature = node.split_feature
     split_threshold = node.split_threshold
-    input = get_input(character_one, character_two)
+    input = get_input(characters[0], characters[1])
     while (node.left != None): # perfect binary tree, checking only left suffices
         if input[split_feature] > split_threshold:
             node = node.right
@@ -203,7 +204,8 @@ def get_winner(node, character_one, character_two):
 # running and testing model
 node = Node(TRAINING_DATAPOINTS)
 root = build_decision_tree(node)
-winner = get_winner(root, GOJO, GOKU)
-print(f"character {winner} wins")
+fighters = (GOJO, GOKU)
+winner = get_winner(root, fighters)
+print(f"{fighters[winner]} wins!")
 
 # TODO: debug dis whole thing lol
