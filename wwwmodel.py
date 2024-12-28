@@ -50,31 +50,31 @@ TOJI = np.array([9, 10, 0, 8, 9, 8, 8, 7])
 JOGO = np.array([6, 7, 9, 6, 6, 7, 7, 7])
 
 # Takes as input two character vectors and returns the input vector that can be used on the decision tree
-def make_input(characterOne, characterTwo):
-    return characterOne - characterTwo
+def get_input(character_one, character_two):
+    return character_one - character_two
 
 # Temporary training datapoints:
 TRAINING_DATAPOINTS = [
-    (make_input(GOJO, GOKU), 2),
-    (make_input(GOKU, SAITAMA), 2),
-    (make_input(GOJO, SAITAMA), 2),
-    (make_input(GOKU, JOGO), 1),
-    (make_input(GOJO, TOJI), 1),
-    (make_input(GUY, NANAMI), 1),
-    (make_input(JOGO, NANAMI), 1),
-    (make_input(JOGO, ACE), 1),
-    (make_input(JOGO, GAARA), 1),
-    (make_input(GAARA, REINER), 2),
-    (make_input(TOJI, LUFFY), 2),
-    (make_input(TOJI, NANAMI), 1),
-    (make_input(ITACHI, REINER), 1),
-    (make_input(GAARA, ITACHI), 2),
-    (make_input(NANAMI, REINER), 1),
-    (make_input(GUY, GAARA), 1),
-    (make_input(ACE, SHIKAMARU), 1),
-    (make_input(NANAMI, SHIKAMARU), 2),
-    (make_input(REINER, SHIKAMARU), 1),
-    (make_input(LUFFY, GOKU), 2)
+    (get_input(GOJO, GOKU), 2),
+    (get_input(GOKU, SAITAMA), 2),
+    (get_input(GOJO, SAITAMA), 2),
+    (get_input(GOKU, JOGO), 1),
+    (get_input(GOJO, TOJI), 1),
+    (get_input(GUY, NANAMI), 1),
+    (get_input(JOGO, NANAMI), 1),
+    (get_input(JOGO, ACE), 1),
+    (get_input(JOGO, GAARA), 1),
+    (get_input(GAARA, REINER), 2),
+    (get_input(TOJI, LUFFY), 2),
+    (get_input(TOJI, NANAMI), 1),
+    (get_input(ITACHI, REINER), 1),
+    (get_input(GAARA, ITACHI), 2),
+    (get_input(NANAMI, REINER), 1),
+    (get_input(GUY, GAARA), 1),
+    (get_input(ACE, SHIKAMARU), 1),
+    (get_input(NANAMI, SHIKAMARU), 2),
+    (get_input(REINER, SHIKAMARU), 1),
+    (get_input(LUFFY, GOKU), 2)
 ]
 NUM_OF_TRAINING_DP = len(TRAINING_DATAPOINTS)
 OUTPUTS = [1, 2] # class 1 - character 1 wins, class 2 - character 2 wins
@@ -103,8 +103,9 @@ def entropy(dp_list):
     
     sum = 0
     for i in OUTPUTS:
-        pi = len(dp_classes_matrix[i-1]) / len(dp_list) # probability of class i in node
-        sum += pi * log(pi, 2)
+        if len(dp_classes_matrix[i-1]) != 0:
+            prob_i = len(dp_classes_matrix[i-1]) / len(dp_list) # probability of class i in node
+            sum += prob_i * log(prob_i, 2)
 
     return -(sum)
 
@@ -168,3 +169,41 @@ def build_decision_tree(node):
     node.right = build_decision_tree(right_child_node)
     node.left = build_decision_tree(left_child_node)
     return node
+
+def classify_node(node):
+    class_one_count = 0
+    class_two_count = 0
+    for dp in node.dp_list:
+        if dp[1] == 1:
+            class_one_count += 1
+        else:
+            class_two_count += 1
+
+    prob_one = class_one_count / node.dp_count
+    prob_two = class_two_count / node.dp_count
+    if prob_one > prob_two:
+        return '1'
+    else:
+        return '2'
+
+# assumes fully built decision tree
+def get_winner(node, character_one, character_two):
+    split_feature = node.split_feature
+    split_threshold = node.split_threshold
+    input = get_input(character_one, character_two)
+    while (node.left != None): # perfect binary tree, checking only left suffices
+        if input[split_feature] > split_threshold:
+            node = node.right
+        else:
+            node = node.left
+    winner_label = classify_node(node)
+    return winner_label
+
+
+# running and testing model
+node = Node(TRAINING_DATAPOINTS)
+root = build_decision_tree(node)
+winner = get_winner(root, GOJO, GOKU)
+print(f"character {winner} wins")
+
+# TODO: debug dis whole thing lol
