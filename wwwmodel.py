@@ -145,6 +145,11 @@ def build_decision_tree(node):
             if ig > split_fcn[0]:
                 split_fcn = [ig, feature, threshold]
     
+    if split_fcn[0] == -1:
+        node.left = None
+        node.right = None
+        return node
+    
     # current node split is best possible split
     node.split_feature = split_fcn[1]
     node.split_threshold = split_fcn[2]
