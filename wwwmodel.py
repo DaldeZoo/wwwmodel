@@ -182,19 +182,10 @@ def clean_tree(root):
 
 def build_decision_tree(node):
     # base case: no uncertainty or num of dps small enough, then becomes leaf node
-    if (entropy(node.dp_list) == 0):
-        print("ZERO ENTROPY")
+    if (entropy(node.dp_list) == 0) or (len(node.dp_list) < MIN_NODE_DP_COUNT):
         node.left = None
         node.right = None
         node.class_label = classify_node(node)
-        print(f"label {node.class_label}")
-        return node
-    if (len(node.dp_list) < MIN_NODE_DP_COUNT):
-        print("LESS THAN 3")
-        node.left = None
-        node.right = None
-        node.class_label = classify_node(node)
-        print(f"label {node.class_label}")
         return node
 
     # getting best split function based on highest ig
@@ -205,10 +196,7 @@ def build_decision_tree(node):
             if ig > split_fcn[0]:
                 split_fcn = [ig, feature, threshold]
     
-    print(split_fcn)
-    
     if split_fcn[0] == -1:
-        print("JUMBA")
         node.left = None
         node.right = None
         node.class_label = classify_node(node)
@@ -226,15 +214,12 @@ def build_decision_tree(node):
             right_dp_list.append(dp)
         else:
             left_dp_list.append(dp)
-    print(len(right_dp_list))
-    print(len(left_dp_list))
     
     right_child_node = Node(right_dp_list)
     left_child_node = Node(left_dp_list)
     node.right = build_decision_tree(right_child_node)
     node.left = build_decision_tree(left_child_node)
 
-    print(node.split_threshold)
     clean_tree(node)
     return node
 # TODO: after tree is built, dp_list and counts in each node are pointless...
@@ -257,7 +242,6 @@ def get_winner(node, characters):
     split_feature = node.split_feature
     split_threshold = node.split_threshold
     input = get_input(characters[0], characters[1])
-    print(input)
     while (node.left != None): # perfect binary tree, checking only left suffices
         if input[split_feature] > split_threshold:
             node = node.right
@@ -265,20 +249,6 @@ def get_winner(node, characters):
             node = node.left
     winner = node.class_label
     return characters[winner]
-
-
-def add_edges(graph, node):
-    if node:
-        graph.node(str(node.split_threshold))  # Add the current node
-        if node.left:
-            graph.node(str(node.left.split_threshold))
-            graph.edge(str(node.split_threshold), str(node.left.split_threshold))
-            add_edges(graph, node.left)
-        if node.right:
-            graph.node(str(node.right.split_threshold))
-            graph.edge(str(node.split_threshold), str(node.right.split_threshold))
-            add_edges(graph, node.right)
-
 
 # running and testing model
 node = Node(TRAINING_DATAPOINTS)
