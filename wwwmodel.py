@@ -61,26 +61,64 @@ def get_input(character_one, character_two):
 # these are labeled training datapoints ie (input, output)
 TRAINING_DATAPOINTS = [
     (get_input(GOJO, GOKU), 1),
+    (get_input(GOKU, GOJO), 0),
+
     (get_input(GOKU, SAITAMA), 1),
+    (get_input(SAITAMA, GOKU), 0),
+
     (get_input(GOJO, SAITAMA), 1),
+    (get_input(SAITAMA, GOJO), 0),
+
     (get_input(GOKU, JOGO), 0),
+    (get_input(JOGO, GOKU), 1),
+
     (get_input(GOJO, TOJI), 0),
+    (get_input(TOJI, GOJO), 1),
+
     (get_input(GUY, NANAMI), 0),
+    (get_input(NANAMI, GUY), 1),
+
     (get_input(JOGO, NANAMI), 0),
+    (get_input(NANAMI, JOGO), 1),
+
     (get_input(JOGO, ACE), 0),
+    (get_input(ACE, JOGO), 1),
+
     (get_input(JOGO, GAARA), 0),
+    (get_input(GAARA, JOGO), 1),
+
     (get_input(GAARA, REINER), 1),
+    (get_input(REINER, GAARA), 0),
+
     (get_input(TOJI, LUFFY), 1),
+    (get_input(LUFFY, TOJI), 0),
+
     (get_input(TOJI, NANAMI), 0),
+    (get_input(NANAMI, TOJI), 1),
+
     (get_input(ITACHI, REINER), 0),
+    (get_input(REINER, ITACHI), 1),
+
     (get_input(GAARA, ITACHI), 1),
+    (get_input(ITACHI, GAARA), 0),
+
     (get_input(NANAMI, REINER), 0),
+    (get_input(REINER, NANAMI), 1),
+
     (get_input(GUY, GAARA), 0),
+    (get_input(GAARA, GUY), 1),
+
     (get_input(ACE, SHIKAMARU), 0),
-    (get_input(NANAMI, SHIKAMARU), 1),
+    (get_input(SHIKAMARU, ACE), 1),
+
     (get_input(REINER, SHIKAMARU), 0),
-    (get_input(LUFFY, GOKU), 1)
+    (get_input(SHIKAMARU, REINER), 1),
+    
+    (get_input(LUFFY, GOKU), 1),
+    (get_input(GOKU, LUFFY), 0)
 ]
+# ensure both orderings of characters are provided in training datapoints
+
 OUTPUTS = (0, 1) # class 0 - character 1 wins, class 1 - character 2 wins
 class Node:
    def __init__(self, dp_list):
@@ -144,10 +182,19 @@ def clean_tree(root):
 
 def build_decision_tree(node):
     # base case: no uncertainty or num of dps small enough, then becomes leaf node
-    if (entropy(node.dp_list) == 0) or (len(node.dp_list) < MIN_NODE_DP_COUNT):
+    if (entropy(node.dp_list) == 0):
+        print("ZERO ENTROPY")
         node.left = None
         node.right = None
         node.class_label = classify_node(node)
+        print(f"label {node.class_label}")
+        return node
+    if (len(node.dp_list) < MIN_NODE_DP_COUNT):
+        print("LESS THAN 3")
+        node.left = None
+        node.right = None
+        node.class_label = classify_node(node)
+        print(f"label {node.class_label}")
         return node
 
     # getting best split function based on highest ig
@@ -158,7 +205,10 @@ def build_decision_tree(node):
             if ig > split_fcn[0]:
                 split_fcn = [ig, feature, threshold]
     
+    print(split_fcn)
+    
     if split_fcn[0] == -1:
+        print("JUMBA")
         node.left = None
         node.right = None
         node.class_label = classify_node(node)
@@ -176,12 +226,15 @@ def build_decision_tree(node):
             right_dp_list.append(dp)
         else:
             left_dp_list.append(dp)
+    print(len(right_dp_list))
+    print(len(left_dp_list))
     
     right_child_node = Node(right_dp_list)
     left_child_node = Node(left_dp_list)
     node.right = build_decision_tree(right_child_node)
     node.left = build_decision_tree(left_child_node)
 
+    print(node.split_threshold)
     clean_tree(node)
     return node
 # TODO: after tree is built, dp_list and counts in each node are pointless...
@@ -204,6 +257,7 @@ def get_winner(node, characters):
     split_feature = node.split_feature
     split_threshold = node.split_threshold
     input = get_input(characters[0], characters[1])
+    print(input)
     while (node.left != None): # perfect binary tree, checking only left suffices
         if input[split_feature] > split_threshold:
             node = node.right
@@ -212,12 +266,28 @@ def get_winner(node, characters):
     winner = node.class_label
     return characters[winner]
 
+
+def add_edges(graph, node):
+    if node:
+        graph.node(str(node.split_threshold))  # Add the current node
+        if node.left:
+            graph.node(str(node.left.split_threshold))
+            graph.edge(str(node.split_threshold), str(node.left.split_threshold))
+            add_edges(graph, node.left)
+        if node.right:
+            graph.node(str(node.right.split_threshold))
+            graph.edge(str(node.split_threshold), str(node.right.split_threshold))
+            add_edges(graph, node.right)
+
+
 # running and testing model
 node = Node(TRAINING_DATAPOINTS)
 root = build_decision_tree(node)
 characters = (GOJO, GOKU)
 winner = get_winner(root, characters)
 print(f"{winner[0]} wins!")
-# uhh... why did gojo win?
+characters = (GOKU, GOJO)
+winner = get_winner(root, characters)
+print(f"{winner[0]} wins!")
 
-# TODO: debug dis whole thing lol
+# TODO: need more data for better results
